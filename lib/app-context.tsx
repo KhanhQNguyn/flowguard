@@ -57,7 +57,59 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Fetch real weather data from OpenWeather API
+  // Fetch mock data from backend
+  const fetchMockData = async () => {
+    console.log('[FlowGuard] Fetching mock data from backend')
+    try {
+      // Fetch sensors
+      const sensorsResponse = await fetch('http://localhost:5000/api/sensors')
+      if (sensorsResponse.ok) {
+        const sensorsData = await sensorsResponse.json()
+        const backendSensors: Sensor[] = sensorsData.sensors.map((s: any) => ({
+          id: s.id,
+          name: s.name,
+          lat: s.lat,
+          lng: s.lng,
+          status: s.status,
+          waterLevel: s.waterLevel,
+          trend: s.trend,
+          district: s.district,
+          rainIntensity: s.rainIntensity,
+          tideLevel: s.tideLevel,
+          reportsNearby: s.reportsNearby
+        }))
+        setSensors(backendSensors)
+        console.log('[FlowGuard] ✓ Sensors loaded from backend:', backendSensors.length)
+      }
+
+      // Fetch alerts
+      const alertsResponse = await fetch('http://localhost:5000/api/alerts/active')
+      if (alertsResponse.ok) {
+        const alertsData = await alertsResponse.json()
+        const backendAlerts: Alert[] = alertsData.alerts.map((a: any) => ({
+          id: a.id,
+          type: a.type,
+          severity: a.severity,
+          title: a.title,
+          message: a.message,
+          district: a.district,
+          street: a.street,
+          createdAt: new Date(),
+          expiresAt: new Date(Date.now() + 3600000),
+          isActive: a.isActive
+        }))
+        setAlerts(backendAlerts)
+        console.log('[FlowGuard] ✓ Alerts loaded from backend:', backendAlerts.length)
+      }
+
+      setLastUpdated(new Date())
+    } catch (error) {
+      console.error('[FlowGuard] Error fetching mock data from backend:', error)
+      console.log('[FlowGuard] Using local mock data')
+    }
+  }
+
+  // Fetch real weather data from OpenWeather API (via backend)
   const fetchWeatherData = async () => {
     if (!useRealWeather) {
       console.log('[FlowGuard] useRealWeather is false, skipping API fetch')
@@ -68,6 +120,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     console.log('[FlowGuard] Starting weather data fetch for', DISTRICTS.length, 'districts')
     
     try {
+      // First fetch mock data (sensors + alerts)
+      await fetchMockData()
+
       // Fetch weather for all districts
       const weatherSensors = await fetchWeatherForAllDistricts(DISTRICTS)
       console.log('[FlowGuard] Received', weatherSensors.length, 'weather sensors from API')
@@ -129,6 +184,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       console.error('[FlowGuard] Error fetching weather data:', error)
       // Gracefully fall back to mock data if API fails
       console.log('[FlowGuard] Falling back to mock data')
+      await fetchMockData()
     } finally {
       setIsLoadingWeather(false)
     }
@@ -138,14 +194,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (useRealWeather) {
       fetchWeatherData()
     } else {
+      fetchMockData()
       calculateRiskForDistrict(currentDistrict)
       setLastUpdated(new Date())
     }
   }
 
-  // Initial load: fetch real weather data
+  // Initial load: fetch mock data first, then real weather data
   useEffect(() => {
-    console.log('[FlowGuard] App mounted, fetching initial weather data')
+    console.log('[FlowGuard] App mounted, fetching initial data')
     fetchWeatherData()
   }, [useRealWeather])
 

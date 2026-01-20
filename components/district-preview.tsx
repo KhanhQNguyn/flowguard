@@ -1,11 +1,50 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { ChevronRight, AlertTriangle } from 'lucide-react'
 import { Card } from '@/components/ui/card'
-import { MOCK_DISTRICTS } from '@/lib/mock-districts'
+
+interface District {
+  id: string
+  name: string
+  nameVi: string
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH'
+  activeAlerts: number
+  sensorCount: number
+  population: number
+}
 
 export function DistrictPreview() {
-  const highRiskDistricts = MOCK_DISTRICTS.filter(d => d.riskLevel === 'HIGH' || d.riskLevel === 'MEDIUM')
+  const [districts, setDistricts] = useState<District[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchDistricts = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/districts/summary')
+        if (!response.ok) {
+          throw new Error(`Failed to fetch districts: ${response.status}`)
+        }
+        const data = await response.json()
+        setDistricts(data.districts || [])
+      } catch (err) {
+        console.error('[DistrictPreview] Error fetching districts:', err)
+        setError(err instanceof Error ? err.message : 'Unknown error')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDistricts()
+  }, [])
+
+  if (error) {
+    console.warn('[DistrictPreview] Backend error:', error)
+  }
+
+  const highRiskDistricts = districts
+    .filter(d => d.riskLevel === 'HIGH' || d.riskLevel === 'MEDIUM')
     .slice(0, 3)
 
   const getRiskBadge = (risk: 'LOW' | 'MEDIUM' | 'HIGH') => {
