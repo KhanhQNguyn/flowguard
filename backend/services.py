@@ -193,6 +193,156 @@ def store_weather_to_existing_schema(location_name: str, lat: float, lng: float,
         weather_response = supabase_client.table('current_weather').insert(current_weather_data).execute()
         print(f"[DEBUG] Step 4d: Current weather insert response: {weather_response.data}")
         
+        # Step 5: Store minutely weather data (precipitation every minute)
+        print(f"[DEBUG] Step 5a: Processing minutely weather data...")
+        minutely_data = weather_data.get('minutely', [])
+        if minutely_data:
+            try:
+                # Delete old minutely data for this request
+                supabase_client.table('minutely_weather').delete().eq('request_id', request_id).execute()
+                
+                # Insert new minutely data (limit to first 60 for reasonable data size)
+                for minute in minutely_data[:60]:
+                    minutely_record = {
+                        'request_id': request_id,
+                        'dt': minute.get('dt'),
+                        'precipitation': minute.get('precipitation')
+                    }
+                    supabase_client.table('minutely_weather').insert(minutely_record).execute()
+                print(f"[DEBUG] Step 5b: ✓ Inserted {len(minutely_data[:60])} minutely records")
+            except Exception as min_e:
+                print(f"[DEBUG] Step 5: Minutely insert error: {min_e}")
+        
+        # Step 6: Store hourly weather data (48 hours)
+        print(f"[DEBUG] Step 6a: Processing hourly weather data...")
+        hourly_data = weather_data.get('hourly', [])
+        if hourly_data:
+            try:
+                # Delete old hourly data for this request
+                supabase_client.table('hourly_weather').delete().eq('request_id', request_id).execute()
+                
+                # Insert new hourly data
+                for hour in hourly_data:
+                    hour_condition = hour.get('weather', [{}])[0]
+                    hour_condition_api_id = hour_condition.get('id')
+                    hour_condition_id = None
+                    
+                    # Look up the database condition_id if API id exists
+                    if hour_condition_api_id:
+                        try:
+                            existing_cond = supabase_client.table('weather_condition').select('condition_id').eq('api_id', hour_condition_api_id).execute()
+                            if existing_cond.data:
+                                hour_condition_id = existing_cond.data[0]['condition_id']
+                        except:
+                            pass
+                    
+                    hourly_record = {
+                        'request_id': request_id,
+                        'dt': hour.get('dt'),
+                        'temp': hour.get('temp'),
+                        'feels_like': hour.get('feels_like'),
+                        'pressure': hour.get('pressure'),
+                        'humidity': hour.get('humidity'),
+                        'dew_point': hour.get('dew_point'),
+                        'uvi': hour.get('uvi'),
+                        'clouds': hour.get('clouds'),
+                        'visibility': hour.get('visibility'),
+                        'wind_speed': hour.get('wind_speed'),
+                        'wind_deg': hour.get('wind_deg'),
+                        'wind_gust': hour.get('wind_gust'),
+                        'pop': hour.get('pop'),
+                        'rain_1h': hour.get('rain', {}).get('1h'),
+                        'snow_1h': hour.get('snow', {}).get('1h'),
+                        'condition_id': hour_condition_id
+                    }
+                    supabase_client.table('hourly_weather').insert(hourly_record).execute()
+                print(f"[DEBUG] Step 6b: ✓ Inserted {len(hourly_data)} hourly records")
+            except Exception as hour_e:
+                print(f"[DEBUG] Step 6: Hourly insert error: {hour_e}")
+        
+        # Step 7: Store daily weather data (7-8 days)
+        print(f"[DEBUG] Step 7a: Processing daily weather data...")
+        daily_data = weather_data.get('daily', [])
+        if daily_data:
+            try:
+                # Delete old daily data for this request
+                supabase_client.table('daily_weather').delete().eq('request_id', request_id).execute()
+                
+                # Insert new daily data
+                for day in daily_data:
+                    day_condition = day.get('weather', [{}])[0]
+                    day_condition_api_id = day_condition.get('id')
+                    day_condition_id = None
+                    
+                    # Look up the database condition_id if API id exists
+                    if day_condition_api_id:
+                        try:
+                            existing_cond = supabase_client.table('weather_condition').select('condition_id').eq('api_id', day_condition_api_id).execute()
+                            if existing_cond.data:
+                                day_condition_id = existing_cond.data[0]['condition_id']
+                        except:
+                            pass
+                    
+                    daily_record = {
+                        'request_id': request_id,
+                        'dt': day.get('dt'),
+                        'sunrise': day.get('sunrise'),
+                        'sunset': day.get('sunset'),
+                        'moonrise': day.get('moonrise'),
+                        'moonset': day.get('moonset'),
+                        'moon_phase': day.get('moon_phase'),
+                        'summary': day.get('summary'),
+                        'temp_morn': day.get('temp', {}).get('morn'),
+                        'temp_day': day.get('temp', {}).get('day'),
+                        'temp_eve': day.get('temp', {}).get('eve'),
+                        'temp_night': day.get('temp', {}).get('night'),
+                        'temp_min': day.get('temp', {}).get('min'),
+                        'temp_max': day.get('temp', {}).get('max'),
+                        'feels_morn': day.get('feels_like', {}).get('morn'),
+                        'feels_day': day.get('feels_like', {}).get('day'),
+                        'feels_eve': day.get('feels_like', {}).get('eve'),
+                        'feels_night': day.get('feels_like', {}).get('night'),
+                        'pressure': day.get('pressure'),
+                        'humidity': day.get('humidity'),
+                        'dew_point': day.get('dew_point'),
+                        'wind_speed': day.get('wind_speed'),
+                        'wind_deg': day.get('wind_deg'),
+                        'wind_gust': day.get('wind_gust'),
+                        'clouds': day.get('clouds'),
+                        'pop': day.get('pop'),
+                        'rain': day.get('rain'),
+                        'snow': day.get('snow'),
+                        'uvi': day.get('uvi'),
+                        'condition_id': day_condition_id
+                    }
+                    supabase_client.table('daily_weather').insert(daily_record).execute()
+                print(f"[DEBUG] Step 7b: ✓ Inserted {len(daily_data)} daily records")
+            except Exception as day_e:
+                print(f"[DEBUG] Step 7: Daily insert error: {day_e}")
+        
+        # Step 8: Store weather alerts
+        print(f"[DEBUG] Step 8a: Processing weather alerts...")
+        alerts_data = weather_data.get('alerts', [])
+        if alerts_data:
+            try:
+                # Delete old alerts for this request
+                supabase_client.table('weather_alerts').delete().eq('request_id', request_id).execute()
+                
+                # Insert new alerts
+                for alert in alerts_data:
+                    alert_record = {
+                        'request_id': request_id,
+                        'sender_name': alert.get('sender_name'),
+                        'event': alert.get('event'),
+                        'start': alert.get('start'),
+                        'end': alert.get('end'),
+                        'description': alert.get('description')
+                    }
+                    supabase_client.table('weather_alerts').insert(alert_record).execute()
+                print(f"[DEBUG] Step 8b: ✓ Inserted {len(alerts_data)} alert records")
+            except Exception as alert_e:
+                print(f"[DEBUG] Step 8: Alert insert error: {alert_e}")
+        
         print(f"[Supabase] ✓ Weather stored for {location_name}: {current_weather_data['temp']}°C, {weather_condition.get('main')}")
         return True
         
