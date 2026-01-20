@@ -69,49 +69,50 @@ export interface WeatherAlert {
 }
 
 /**
- * Fetch weather data from OpenWeather One Call API 3.0
+ * Fetch weather data from Python Backend Service
+ * Backend handles OpenWeather API calls and keeps API key secure
  */
 export async function fetchOpenWeatherData(
   lat: number,
   lon: number
 ): Promise<OpenWeatherResponse | null> {
-  const apiKey = process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY
-
-  if (!apiKey) {
-    console.error('[OpenWeather] API key not configured. Check .env.local file.')
-    return null
-  }
-
   try {
-    const url = new URL('https://api.openweathermap.org/data/3.0/onecall')
-    url.searchParams.append('lat', lat.toString())
-    url.searchParams.append('lon', lon.toString())
-    url.searchParams.append('appid', apiKey)
-    url.searchParams.append('units', 'metric')
-    url.searchParams.append('lang', 'en')
+    const backendUrl = `http://localhost:5000/api/weather/coords/${lat}/${lon}`
+    
+    console.log(`[Backend] Fetching data from: ${backendUrl}`)
 
-    console.log(`[OpenWeather] Fetching data for lat=${lat}, lon=${lon}`)
-
-    const response = await fetch(url.toString(), {
-      next: { revalidate: 300 } // Cache for 5 minutes
+    const response = await fetch(backendUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
     })
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error(`[OpenWeather] API error: ${response.status}`)
-      console.error(`[OpenWeather] Response: ${errorText}`)
+      console.error(`[Backend] Error: ${response.status}`)
+      console.error(`[Backend] Response: ${errorText}`)
       
-      if (response.status === 401) {
-        console.error('[OpenWeather] 401 Unauthorized - Check your API key validity')
-        console.error('[OpenWeather] API Key used:', apiKey.substring(0, 10) + '...')
+      if (response.status === 404) {
+        console.error('[Backend] Endpoint not found - Is backend running on localhost:5000?')
       }
       return null
     }
 
-    const data: OpenWeatherResponse = await response.json()
+    const backendResponse = await response.json()
+    
+    if (!backendResponse.success) {
+      console.error('[Backend] Request failed:', backendResponse.error)
+      return null
+    }
+
+    // Extract the weather data from backend response
+    const data: OpenWeatherResponse = backendResponse.data
+    console.log('[Backend] ✓ Successfully received weather data')
     return data
   } catch (error) {
-    console.error('[OpenWeather] Fetch error:', error)
+    console.error('[Backend] Fetch error:', error)
+    console.error('[Backend] Make sure backend is running: python backend_weather_service.py')
     return null
   }
 }
