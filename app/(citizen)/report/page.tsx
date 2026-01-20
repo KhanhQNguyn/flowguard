@@ -9,20 +9,70 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useUser } from '@/lib/user-context'
 
+// Helper function to find nearest district
+function getNearestDistrict(latitude: number, longitude: number): string {
+  const districts = [
+    { name: 'District 1', lat: 10.757, lng: 106.682 },
+    { name: 'District 3', lat: 10.795, lng: 106.673 },
+    { name: 'District 4', lat: 10.788, lng: 106.703 },
+    { name: 'District 7', lat: 10.7356, lng: 106.7019 },
+    { name: 'Phú Nhuận', lat: 10.798, lng: 106.686 }
+  ]
+
+  let nearestDistrict = districts[0]
+  let minDistance = Infinity
+
+  districts.forEach(district => {
+    const dx = Math.abs(latitude - district.lat)
+    const dy = Math.abs(longitude - district.lng)
+    const distance = Math.sqrt(dx * dx + dy * dy)
+    if (distance < minDistance) {
+      minDistance = distance
+      nearestDistrict = district
+    }
+  })
+
+  return nearestDistrict.name
+}
+
 export default function ReportPage() {
   const router = useRouter()
   const { addFlowPoints } = useUser()
   const [photo, setPhoto] = useState<string | null>(null)
   const [location, setLocation] = useState('Detecting...')
+  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null)
+  const [locationError, setLocationError] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
-    // Simulate location detection
-    const timer = setTimeout(() => {
+    if (!navigator.geolocation) {
+      setLocationError('Geolocation not supported')
       setLocation('District 7, Ho Chi Minh City')
-    }, 1000)
-    return () => clearTimeout(timer)
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords
+        const district = getNearestDistrict(latitude, longitude)
+        setCoordinates({ lat: latitude, lng: longitude })
+        setLocation(`${latitude.toFixed(4)}°N, ${longitude.toFixed(4)}°E`)
+        setLocationError(null)
+        console.log(`[FlowGuard] Report location detected: ${district} at ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`)
+      },
+      (error) => {
+        console.warn('[FlowGuard] Report location detection failed:', error.message)
+        setLocationError(error.message)
+        // Fallback to default
+        setLocation('District 7, Ho Chi Minh City')
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000 // 5 minutes cache
+      }
+    )
   }, [])
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -122,10 +172,14 @@ export default function ReportPage() {
         {/* Auto-detected Location */}
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <MapPin className="w-5 h-5 text-[#3b82f6]" />
-            <div>
+            <MapPin className={`w-5 h-5 ${locationError ? 'text-red-500' : 'text-[#3b82f6]'}`} />
+            <div className="flex-1">
               <p className="text-sm font-semibold">Location</p>
-              <p className="text-xs text-neutral-600">{location}</p>
+              <p className={`font-mono text-xs font-semibold ${locationError ? 'text-red-500' : 'text-neutral-900'}`}>
+                {location}
+              </p>
+              {coordinates && <p className="text-xs text-neutral-500 mt-1">({getNearestDistrict(coordinates.lat, coordinates.lng)} area)</p>}
+              {locationError && <p className="text-xs text-red-500 mt-1">⚠ {locationError}</p>}
             </div>
           </div>
         </Card>
@@ -152,7 +206,7 @@ export default function ReportPage() {
       </div>
 
       {/* Submit Button */}
-      <div className="fixed bottom-20 left-0 right-0 px-4 pb-4 bg-gradient-to-t from-white via-white to-transparent pt-6">
+      <div className="fixed bottom-20 left-0 right-0 px-4 pb-4 bg-linear-to-t from-white via-white to-transparent pt-6">
         <Button
           onClick={handleSubmit}
           disabled={!photo || isSubmitting}

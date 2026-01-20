@@ -12,6 +12,32 @@ import { RewardSuccessModal } from '@/components/reward-success-modal'
 import { AvoidList } from '@/components/avoid-list'
 import { useUser } from '@/lib/user-context'
 
+// Helper function to find nearest district
+function getNearestDistrict(latitude: number, longitude: number): string {
+  const districts = [
+    { name: 'District 1', lat: 10.757, lng: 106.682 },
+    { name: 'District 3', lat: 10.795, lng: 106.673 },
+    { name: 'District 4', lat: 10.788, lng: 106.703 },
+    { name: 'District 7', lat: 10.7356, lng: 106.7019 },
+    { name: 'Phú Nhuận', lat: 10.798, lng: 106.686 }
+  ]
+
+  let nearestDistrict = districts[0]
+  let minDistance = Infinity
+
+  districts.forEach(district => {
+    const dx = Math.abs(latitude - district.lat)
+    const dy = Math.abs(longitude - district.lng)
+    const distance = Math.sqrt(dx * dx + dy * dy)
+    if (distance < minDistance) {
+      minDistance = distance
+      nearestDistrict = district
+    }
+  })
+
+  return nearestDistrict.name
+}
+
 export default function NavigatePage() {
   const router = useRouter()
   const { flowPoints } = useUser()
@@ -21,6 +47,9 @@ export default function NavigatePage() {
   const [showRewardSuccess, setShowRewardSuccess] = useState(false)
   const [tripStarted, setTripStarted] = useState(false)
   const [rewardData, setRewardData] = useState<{ points: number; reason: string } | null>(null)
+  const [currentLocation, setCurrentLocation] = useState('Detecting...')
+  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null)
+  const [locationError, setLocationError] = useState<string | null>(null)
 
   const handleFindRoute = () => {
     if (destination) {
@@ -29,9 +58,17 @@ export default function NavigatePage() {
   }
 
   const handleStartNavigation = () => {
-    // Open Google Maps with the destination
+    // Open Google Maps with user's current location as origin and destination
     const encodedDestination = encodeURIComponent(destination + ', Ho Chi Minh City, Vietnam')
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodedDestination}`, '_blank')
+    
+    // Use detected coordinates if available, otherwise use fallback
+    const originParam = coordinates 
+      ? `&origin=${coordinates.lat},${coordinates.lng}`
+      : '&origin=10.7356,106.7019' // District 7 fallback
+    
+    const mapsUrl = `https://www.google.com/maps/dir/?api=1${originParam}&destination=${encodedDestination}`
+    console.log(`[FlowGuard] Opening Google Maps:`, mapsUrl)
+    window.open(mapsUrl, '_blank')
     setTripStarted(true)
   }
 
@@ -71,6 +108,37 @@ export default function NavigatePage() {
     setShowPostTrip(true)
   }
 
+  // Detect user location on component mount
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setLocationError('Geolocation not supported')
+      setCurrentLocation('District 7, HCMC')
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords
+        const district = getNearestDistrict(latitude, longitude)
+        setCoordinates({ lat: latitude, lng: longitude })
+        setCurrentLocation(`${latitude.toFixed(4)}°N, ${longitude.toFixed(4)}°E`)
+        setLocationError(null)
+        console.log(`[FlowGuard] Location detected: ${district} at ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`)
+      },
+      (error) => {
+        console.warn('[FlowGuard] Location detection failed:', error.message)
+        setLocationError(error.message)
+        // Fallback to default
+        setCurrentLocation('District 7, HCMC')
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000 // 5 minutes cache
+      }
+    )
+  }, [])
+
   const recentDestinations = [
     { icon: Home, label: 'Home', address: 'District 1' },
     { icon: Building2, label: 'Office', address: 'District 4' },
@@ -103,8 +171,13 @@ export default function NavigatePage() {
           <>
             <Card className="p-4">
               <div className="flex items-center gap-2 text-sm text-neutral-600 mb-4">
-                <div className="w-2 h-2 rounded-full bg-[#289359]" />
-                <span>Your location: District 7, HCMC</span>
+                <div className={`w-2 h-2 rounded-full ${locationError ? 'bg-red-500' : 'bg-[#289359]'}`} />
+                <div>
+                  <p className="text-xs text-neutral-500">Your location</p>
+                  <p className="font-mono text-sm font-semibold text-neutral-900">{currentLocation}</p>
+                  {coordinates && <p className="text-xs text-neutral-500 mt-1">({getNearestDistrict(coordinates.lat, coordinates.lng)} area)</p>}
+                  {locationError && <p className="text-xs text-red-500 mt-1">⚠ {locationError}</p>}
+                </div>
               </div>
 
               <DestinationInput
@@ -155,7 +228,7 @@ export default function NavigatePage() {
             />
 
             {/* Fixed bottom actions */}
-            <div className="fixed bottom-20 left-0 right-0 px-4 pb-4 bg-gradient-to-t from-white via-white to-transparent pt-6 space-y-2">
+            <div className="fixed bottom-20 left-0 right-0 px-4 pb-4 bg-linear-to-t from-white via-white to-transparent pt-6 space-y-2">
               <Button
                 onClick={handleStartNavigation}
                 className="w-full h-14 text-base font-semibold bg-[#289359] hover:bg-[#1f6e43] shadow-lg"
