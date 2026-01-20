@@ -11,6 +11,21 @@ import {
 } from '@/lib/mock-admin-analytics'
 
 export default function AdminDashboard() {
+  // Color mappings - defined once for type safety
+  const riskColorMap = {
+    LOW: 'border-green-200 bg-green-50',
+    MEDIUM: 'border-yellow-200 bg-yellow-50',
+    HIGH: 'border-orange-200 bg-orange-50',
+    CRITICAL: 'border-red-200 bg-red-50'
+  } as const
+
+  const riskIndicatorMap = {
+    LOW: 'bg-green-500',
+    MEDIUM: 'bg-yellow-500',
+    HIGH: 'bg-orange-500',
+    CRITICAL: 'bg-red-500'
+  } as const
+  
   // Hero section - City-wide overview
   const overviewCards = [
     {
@@ -52,7 +67,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-neutral-100">
+    <div className="min-h-screen bg-linear-to-br from-neutral-50 to-neutral-100">
       <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-4 md:space-y-6">
         {/* Header - Now with District Selection */}
         <div className="flex items-start justify-between gap-4 flex-col md:flex-row">
@@ -112,19 +127,8 @@ export default function AdminDashboard() {
           <h2 className="text-lg font-semibold mb-4">District Risk Status</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {districtMetrics.map((district) => {
-              const riskColor = {
-                LOW: 'border-green-200 bg-green-50',
-                MEDIUM: 'border-yellow-200 bg-yellow-50',
-                HIGH: 'border-orange-200 bg-orange-50',
-                CRITICAL: 'border-red-200 bg-red-50'
-              }[district.risk as keyof typeof riskColor]
-
-              const riskIndicator = {
-                LOW: 'bg-green-500',
-                MEDIUM: 'bg-yellow-500',
-                HIGH: 'bg-orange-500',
-                CRITICAL: 'bg-red-500'
-              }[district.risk as keyof typeof riskIndicator]
+              const riskColor = riskColorMap[district.risk as keyof typeof riskColorMap]
+              const riskIndicator = riskIndicatorMap[district.risk as keyof typeof riskIndicatorMap]
 
               return (
                 <Card key={district.id} className={`p-4 border-2 ${riskColor}`}>
@@ -180,7 +184,7 @@ export default function AdminDashboard() {
                         {new Date(alert.timestamp).toLocaleTimeString()}
                       </p>
                     </div>
-                    <div className="text-right flex-shrink-0">
+                    <div className="text-right shrink-0">
                       <div className={`text-2xl font-bold ${
                         alert.severity === 'HIGH' ? 'text-red-700' : 'text-orange-700'
                       }`}>

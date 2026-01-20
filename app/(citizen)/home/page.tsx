@@ -101,7 +101,7 @@ export default function HomePage() {
           <ConditionCard
             icon={Droplets}
             label="Water"
-            value={getWaterLevelDisplay(currentSensor?.waterLevel || 45)}
+            value={getWaterLevelDisplay(currentSensor?.waterLevel ?? 0)}
           />
           <ConditionCard
             icon={Users}
