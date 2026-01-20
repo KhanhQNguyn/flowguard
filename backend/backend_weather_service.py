@@ -32,7 +32,10 @@ from services import (
     get_weather_for_all_districts,
     get_weather_for_district,
     get_weather_for_coordinates,
-    get_all_weather_alerts
+    get_all_weather_alerts,
+    store_weather_to_existing_schema,
+    get_latest_weather_from_db,
+    get_weather_for_location_from_db
 )
 
 app = Flask(__name__)
@@ -234,6 +237,20 @@ def get_latest_water_levels():
         }), 500
 
 
+@app.route('/api/test/save-weather', methods=['GET'])
+def test_save_weather():
+    """
+    TEST ENDPOINT: Manually trigger weather data fetch & save to database
+    This is for debugging - remove in production
+    """
+    print("\n[TEST] Manually triggering fetch_and_store_all_weather()...")
+    fetch_and_store_all_weather()
+    return jsonify({
+        'success': True,
+        'message': 'Weather data fetch & save triggered. Check console for debug output.'
+    })
+
+
 @app.route('/api/water-level/sensors', methods=['GET'])
 def get_water_level_sensors():
     """
@@ -245,6 +262,50 @@ def get_water_level_sensors():
         'success': True,
         'count': len(WATER_LEVEL_SENSORS),
         'sensors': WATER_LEVEL_SENSORS
+    })
+
+
+# ============================================
+# WEATHER DATA STORAGE ENDPOINTS
+# ============================================
+
+@app.route('/api/weather/stored', methods=['GET'])
+def get_stored_weather():
+    """
+    Get latest stored weather from existing schema
+    Returns: weather_request + location + current_weather with condition
+    """
+    print(f"\n[Backend] REQUEST: GET /api/weather/stored")
+    
+    weather_readings = get_latest_weather_from_db()
+    
+    return jsonify({
+        'success': True,
+        'count': len(weather_readings),
+        'timestamp': datetime.now().isoformat(),
+        'readings': weather_readings
+    })
+
+
+@app.route('/api/weather/stored/<int:location_id>', methods=['GET'])
+def get_stored_weather_for_location(location_id):
+    """
+    Get latest stored weather for specific location from existing schema
+    """
+    print(f"\n[Backend] REQUEST: GET /api/weather/stored/{location_id}")
+    
+    reading = get_weather_for_location_from_db(location_id)
+    
+    if not reading:
+        return jsonify({
+            'success': False,
+            'error': f'No weather data found for location {location_id}'
+        }), 404
+    
+    return jsonify({
+        'success': True,
+        'timestamp': datetime.now().isoformat(),
+        'reading': reading
     })
 
 
@@ -355,6 +416,8 @@ def not_found(error):
             'GET /api/weather/district/<name>': 'Get weather for specific district',
             'GET /api/weather/coords/<lat>/<lng>': 'Get weather for coordinates',
             'GET /api/weather/alerts': 'Get all weather alerts',
+            'GET /api/weather/stored': 'Get stored weather from database',
+            'GET /api/weather/stored/<location_id>': 'Get stored weather for specific location',
             'GET /api/locations': 'Get monitored locations',
             'GET /api/water-level/latest': 'Get latest water level readings',
             'GET /api/water-level/sensors': 'Get water level sensors',
@@ -376,20 +439,90 @@ def server_error(error):
 
 
 # ============================================
+# SCHEDULED BACKGROUND TASKS
+# ============================================
+
+def fetch_and_store_all_weather():
+    """
+    Fetch weather data from OpenWeather API for all locations
+    and store to Supabase database (UPSERT pattern)
+    
+    Called every 5 minutes by the scheduler
+    """
+    print(f"\n{'='*70}")
+    print(f"[Scheduler] WEATHER FETCH CYCLE at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"{'='*70}")
+    
+    if not supabase_client:
+        print("[Scheduler] ✗ Supabase not configured, skipping weather fetch")
+        print("="*70)
+        return
+    
+    success_count = 0
+    error_count = 0
+    
+    print(f"[Scheduler] Processing {len(HCM_LOCATIONS)} locations...\n")
+    
+    for i, location in enumerate(HCM_LOCATIONS, 1):
+        print(f"[Scheduler] [{i}/{len(HCM_LOCATIONS)}] {location['name']} ({location['lat']}, {location['lng']})")
+        try:
+            # Fetch data from OpenWeather API
+            print(f"[DEBUG]    Fetching from OpenWeather API...")
+            weather_data = fetch_from_openweather(location['lat'], location['lng'])
+            
+            if weather_data:
+                print(f"[DEBUG]    ✓ API Response received, keys: {list(weather_data.keys())}")
+                print(f"[DEBUG]    Calling store_weather_to_existing_schema...")
+                # Store to database with UPSERT pattern (delete old + insert new)
+                store_result = store_weather_to_existing_schema(
+                    location['name'],
+                    location['lat'],
+                    location['lng'],
+                    weather_data
+                )
+                if store_result:
+                    success_count += 1
+                    print(f"[Scheduler] ✓ {location['name']}: SUCCESS\n")
+                else:
+                    error_count += 1
+                    print(f"[Scheduler] ✗ {location['name']}: FAILED (store returned False)\n")
+            else:
+                error_count += 1
+                print(f"[Scheduler] ✗ {location['name']}: FAILED (no API data)\n")
+                
+        except Exception as e:
+            error_count += 1
+            print(f"[Scheduler] ✗ {location['name']}: EXCEPTION: {type(e).__name__}: {str(e)}\n")
+            import traceback
+            traceback.print_exc()
+    
+    print(f"{'='*70}")
+    print(f"[Scheduler] CYCLE COMPLETE: {success_count} successful, {error_count} failed")
+    print(f"{'='*70}\n")
+
+
+# ============================================
 # BACKGROUND SCHEDULER
 # ============================================
 
 def start_water_level_collector():
     """
     Start the background scheduler to collect water level data every 10 seconds
+    and fetch weather data every 5 minutes
     """
     scheduler = BackgroundScheduler()
     
     # Schedule water level updates every 10 seconds
     scheduler.add_job(upload_water_level_to_supabase, 'interval', seconds=10)
+    print(f"[Scheduler] ✓ Water level job scheduled (10s intervals)")
+    
+    # Schedule weather data fetch every 5 minutes (300 seconds)
+    scheduler.add_job(fetch_and_store_all_weather, 'interval', seconds=300)
+    print(f"[Scheduler] ✓ Weather data job scheduled (5min intervals)")
     
     scheduler.start()
-    print(f"[Scheduler] Water level collector started (10s intervals)")
+    print(f"[Scheduler] ✓ Scheduler started successfully\n")
+
 
 
 # ============================================

@@ -3,10 +3,14 @@ Configuration and Mock Data for FlowGuard Backend
 """
 
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 from supabase import create_client, Client
 
-load_dotenv()
+# Load .env from backend directory
+env_path = Path(__file__).parent / '.env'
+print(f"[Config] Loading .env from: {env_path}")
+load_dotenv(dotenv_path=env_path)
 
 # ============================================
 # ENVIRONMENT & API CONFIGURATION
@@ -19,19 +23,28 @@ if not API_KEY:
 
 # Supabase Configuration
 SUPABASE_URL = os.getenv('SUPABASE_URL')
-SUPABASE_KEY = os.getenv('SUPABASE_KEY')
+SUPABASE_KEY = os.getenv('SERVICE_ROLE_PRIVATE')
+
+print(f"[Config] SUPABASE_URL: {SUPABASE_URL}")
+print(f"[Config] SUPABASE_KEY: {SUPABASE_KEY[:20]}..." if SUPABASE_KEY else "[Config] SUPABASE_KEY: NOT SET")
+
 supabase_client = None
 
 if not SUPABASE_URL or not SUPABASE_KEY:
-    print("WARNING: Supabase not configured - water level collection disabled")
+    print("[Supabase] ✗ Connection failed: Missing URL or KEY")
+    print("[Supabase] Make sure .env file has both SUPABASE_URL and SUPABASE_KEY")
 else:
     try:
+        print(f"[Config] Attempting to create Supabase client...")
+        print(f"[Config] URL length: {len(SUPABASE_URL)}, Key length: {len(SUPABASE_KEY)}")
         supabase_client: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
         print(f"[Supabase] ✓ Connected to {SUPABASE_URL.split('//')[1]}")
     except Exception as e:
-        print(f"[Supabase] ✗ Connection failed: {e}")
+        print(f"[Supabase] ✗ Connection failed: {type(e).__name__}: {str(e)}")
         print("[Supabase] Make sure you're using the SERVICE ROLE KEY, not the Publishable key")
         print("[Supabase] Get it from: Supabase Dashboard → Settings → API → Service role secret")
+        import traceback
+        traceback.print_exc()
         supabase_client = None
 
 OPENWEATHER_API_URL = 'https://api.openweathermap.org/data/3.0/onecall'
