@@ -9,7 +9,7 @@ import { MaintenanceModal } from '@/components/sensor-maintenance-modal'
 import { SensorHistoryModal } from '@/components/sensor-history-modal'
 import dynamic from 'next/dynamic'
 
-const MapComponent = dynamic(() => import('@/components/admin/map-component'), {
+const MapComponent = dynamic(() => import('@/components/map-component'), {
   ssr: false,
   loading: () => <div className="flex-1 bg-gray-100 flex items-center justify-center">Loading map...</div>
 })

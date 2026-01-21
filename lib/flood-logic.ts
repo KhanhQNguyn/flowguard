@@ -19,9 +19,9 @@ export function calculateFloodRisk(input: RiskInput): RiskOutput {
   if (input.waterLevel > 70) {
     risk = 'HIGH'
     reasoning.push('Water level exceeds 70cm critical threshold')
-  } else if (input.waterLevel > 50) {
+  } else if (input.waterLevel > 30) {
     risk = 'MEDIUM'
-    reasoning.push('Water level above 50cm warning threshold')
+    reasoning.push('Water level above 30cm warning threshold')
   }
 
   // Rule 2: Rain intensity escalation

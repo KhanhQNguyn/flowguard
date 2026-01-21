@@ -15,6 +15,7 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
+from typing import Literal
 
 from config import (
     HCM_LOCATIONS,
@@ -37,9 +38,17 @@ from services import (
     get_latest_weather_from_db,
     get_weather_for_location_from_db
 )
+from ai_training import (
+    check_flood_status,
+    check_flood_for_location,
+    check_flood_for_all_locations
+)
 
 app = Flask(__name__)
-CORS(app)
+# Configure CORS to allow requests from Next.js frontend
+CORS(app, 
+     resources={r"/api/*": {"origins": ["http://localhost:3000", "http://127.0.0.1:3000", "*"]}},
+     supports_credentials=True)
 
 print(f"\n[Backend] Initialized at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 print(f"[Backend] API Key: {API_KEY[:10]}...")
@@ -219,22 +228,78 @@ def get_latest_water_levels():
         }), 503
     
     try:
-        response = supabase_client.table('system_logs').select('*').execute()
+        # Order by created_at desc if available to get freshest readings first
+    print('[Backend] Querying Supabase system_logs for latest water levels...')
+    response = supabase_client.table('system_logs').select('*').order('created_at', desc=True).limit(100).execute()
+    print('[Backend] Supabase system_logs rows:', len(response.data) if hasattr(response, 'data') and response.data else 0)
         
         data = response.data if hasattr(response, 'data') else []
         
-        return jsonify({
+    result = {
             'success': True,
             'count': len(data),
             'timestamp': datetime.now().isoformat(),
             'readings': data
-        })
+    }
+    print('[Backend] Returning latest water levels payload:', { 'count': result['count'] })
+    return jsonify(result)
     except Exception as e:
         print(f"[Backend] ERROR: {e}")
         return jsonify({
             'success': False,
             'error': str(e)
         }), 500
+
+
+@app.route('/api/water-level/mode', methods=['GET', 'POST'])
+def water_level_mode():
+    """
+    GET: Return current simulation mode from Supabase sensor_config (id=1)
+    POST: Update mode. Body: {"mode": "SAFE"|"WARNING"|"CRITICAL"}
+    """
+    from flask import request
+    print(f"\n[Backend] REQUEST: {request.method} /api/water-level/mode")
+
+    if not supabase_client:
+        return jsonify({'success': False, 'error': 'Supabase not configured'}), 503
+
+    try:
+    if request.method == 'GET':
+            try:
+                print('[Backend] Fetching sensor_config mode (id=1)')
+                resp = supabase_client.table('sensor_config').select('mode').eq('id', 1).execute()
+                mode = (resp.data[0]['mode'] if resp.data else 'SAFE')
+            except Exception:
+                mode = 'SAFE'
+            print('[Backend] Mode GET result:', mode)
+            return jsonify({'success': True, 'mode': mode})
+
+        # POST
+    data = request.get_json(silent=True) or {}
+    print('[Backend] Mode POST body:', data)
+        mode = str(data.get('mode', '')).upper()
+        valid: tuple[Literal['SAFE','WARNING','CRITICAL'], ...] = ('SAFE', 'WARNING', 'CRITICAL')
+        if mode not in valid:
+            return jsonify({'success': False, 'error': 'Invalid mode. Use SAFE, WARNING, or CRITICAL.'}), 400
+
+        # Try update first
+        try:
+            print('[Backend] Updating sensor_config mode to', mode)
+            update_resp = supabase_client.table('sensor_config').update({'mode': mode}).eq('id', 1).execute()
+            # If no row updated, insert
+            if not getattr(update_resp, 'data', None):
+                print('[Backend] No existing row updated, inserting new mode row')
+                supabase_client.table('sensor_config').insert({'id': 1, 'mode': mode}).execute()
+        except Exception:
+            # Fallback to insert
+            print('[Backend] Update failed, inserting mode row')
+            supabase_client.table('sensor_config').insert({'id': 1, 'mode': mode}).execute()
+
+        print('[Backend] Mode updated to', mode)
+        return jsonify({'success': True, 'mode': mode})
+    except Exception as e:
+        print(f"[Backend] ERROR (mode): {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/api/test/save-weather', methods=['GET'])
@@ -402,6 +467,120 @@ def get_sensor_detail(sensor_id):
 
 
 # ============================================
+# AI FLOOD PREDICTION ENDPOINTS
+# ============================================
+
+@app.route('/api/flood/predict', methods=['GET'])
+def predict_flood():
+    """
+    Predict flood status for given coordinates
+    Query params: lat, lng, water_level (optional)
+    
+    Example: /api/flood/predict?lat=10.762&lng=106.660&water_level=110
+    """
+    print(f"\n[Backend] REQUEST: GET /api/flood/predict")
+    
+    try:
+        from flask import request
+        lat = float(request.args.get('lat', 10.762))
+        lng = float(request.args.get('lng', 106.660))
+        water_level = request.args.get('water_level')
+        use_database = request.args.get('use_database', 'true').lower() == 'true'
+        
+        if water_level:
+            water_level = float(water_level)
+        
+        result = check_flood_status(lat, lng, water_level=water_level, use_database=use_database)
+        
+        return jsonify({
+            'success': True,
+            'timestamp': datetime.now().isoformat(),
+            'prediction': result
+        })
+    except ValueError as e:
+        return jsonify({
+            'success': False,
+            'error': f'Invalid parameter: {str(e)}'
+        }), 400
+    except Exception as e:
+        print(f"[Backend] ERROR: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/flood/predict/location/<location_name>', methods=['GET'])
+def predict_flood_for_location(location_name):
+    """
+    Predict flood status for a named location (e.g., District 7)
+    
+    Example: /api/flood/predict/location/District%207
+    """
+    print(f"\n[Backend] REQUEST: GET /api/flood/predict/location/{location_name}")
+    
+    try:
+        from flask import request
+        use_database = request.args.get('use_database', 'true').lower() == 'true'
+        
+        result = check_flood_for_location(location_name, use_database=use_database)
+        
+        if 'error' in result:
+            return jsonify({
+                'success': False,
+                'error': result['error'],
+                'available_locations': result.get('available_locations', [])
+            }), 404
+        
+        return jsonify({
+            'success': True,
+            'timestamp': datetime.now().isoformat(),
+            'location': location_name,
+            'prediction': result
+        })
+    except Exception as e:
+        print(f"[Backend] ERROR: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/flood/predict/all', methods=['GET'])
+def predict_flood_all():
+    """
+    Predict flood status for all monitored locations
+    Uses latest water level and weather data from database
+    
+    Example: /api/flood/predict/all
+    """
+    print(f"\n[Backend] REQUEST: GET /api/flood/predict/all")
+    
+    try:
+        from flask import request
+        use_database = request.args.get('use_database', 'true').lower() == 'true'
+        
+        results = check_flood_for_all_locations(use_database=use_database)
+        
+        # Count high-risk locations
+        high_risk_count = sum(1 for r in results if r['prediction']['is_flood'])
+        
+        return jsonify({
+            'success': True,
+            'timestamp': datetime.now().isoformat(),
+            'total_locations': len(results),
+            'high_risk_count': high_risk_count,
+            'predictions': results
+        })
+    except Exception as e:
+        print(f"[Backend] ERROR: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+# ============================================
 # ERROR HANDLERS
 # ============================================
 
@@ -425,7 +604,10 @@ def not_found(error):
             'GET /api/alerts/active': 'Get all active alerts',
             'GET /api/alerts/by-district/<name>': 'Get alerts for specific district',
             'GET /api/sensors': 'Get all sensor statuses',
-            'GET /api/sensors/<id>': 'Get specific sensor details'
+            'GET /api/sensors/<id>': 'Get specific sensor details',
+            'GET /api/flood/predict': 'Predict flood for coordinates (params: lat, lng, water_level)',
+            'GET /api/flood/predict/location/<name>': 'Predict flood for named location',
+            'GET /api/flood/predict/all': 'Predict flood for all monitored locations'
         }
     }), 404
 
@@ -551,6 +733,10 @@ if __name__ == '__main__':
     print("  GET http://localhost:5000/api/alerts/by-district/District%207")
     print("  GET http://localhost:5000/api/sensors")
     print("  GET http://localhost:5000/api/sensors/1")
+    print("\n  AI Flood Prediction Endpoints:")
+    print("  GET http://localhost:5000/api/flood/predict?lat=10.762&lng=106.660")
+    print("  GET http://localhost:5000/api/flood/predict/location/District%207")
+    print("  GET http://localhost:5000/api/flood/predict/all")
     print("\nPress Ctrl+C to stop")
     print("="*60 + "\n")
     
@@ -558,4 +744,5 @@ if __name__ == '__main__':
     if supabase_client:
         start_water_level_collector()
     
-    app.run(debug=True, port=5000, host='localhost')
+    # Allow connections from other hosts (0.0.0.0) for better compatibility
+    app.run(debug=True, port=5000, host='0.0.0.0')
