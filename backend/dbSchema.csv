@@ -1,0 +1,442 @@
+table_name,column_name,data_type,is_nullable
+audit_log_entries,instance_id,uuid,YES
+audit_log_entries,id,uuid,NO
+audit_log_entries,payload,json,YES
+audit_log_entries,created_at,timestamp with time zone,YES
+audit_log_entries,ip_address,character varying,NO
+buckets,id,text,NO
+buckets,name,text,NO
+buckets,owner,uuid,YES
+buckets,created_at,timestamp with time zone,YES
+buckets,updated_at,timestamp with time zone,YES
+buckets,public,boolean,YES
+buckets,avif_autodetection,boolean,YES
+buckets,file_size_limit,bigint,YES
+buckets,allowed_mime_types,ARRAY,YES
+buckets,owner_id,text,YES
+buckets,type,USER-DEFINED,NO
+buckets_analytics,name,text,NO
+buckets_analytics,type,USER-DEFINED,NO
+buckets_analytics,format,text,NO
+buckets_analytics,created_at,timestamp with time zone,NO
+buckets_analytics,updated_at,timestamp with time zone,NO
+buckets_analytics,id,uuid,NO
+buckets_analytics,deleted_at,timestamp with time zone,YES
+buckets_vectors,id,text,NO
+buckets_vectors,type,USER-DEFINED,NO
+buckets_vectors,created_at,timestamp with time zone,NO
+buckets_vectors,updated_at,timestamp with time zone,NO
+current_weather,current_id,integer,NO
+current_weather,request_id,integer,NO
+current_weather,dt,bigint,NO
+current_weather,temp,numeric,YES
+current_weather,feels_like,numeric,YES
+current_weather,pressure,integer,YES
+current_weather,humidity,integer,YES
+current_weather,dew_point,numeric,YES
+current_weather,uvi,numeric,YES
+current_weather,clouds,integer,YES
+current_weather,visibility,integer,YES
+current_weather,wind_speed,numeric,YES
+current_weather,wind_deg,integer,YES
+current_weather,wind_gust,numeric,YES
+current_weather,rain_1h,numeric,YES
+current_weather,snow_1h,numeric,YES
+current_weather,condition_id,integer,YES
+daily_weather,daily_id,integer,NO
+daily_weather,request_id,integer,NO
+daily_weather,dt,bigint,NO
+daily_weather,sunrise,bigint,YES
+daily_weather,sunset,bigint,YES
+daily_weather,moonrise,bigint,YES
+daily_weather,moonset,bigint,YES
+daily_weather,moon_phase,numeric,YES
+daily_weather,summary,text,YES
+daily_weather,temp_morn,numeric,YES
+daily_weather,temp_day,numeric,YES
+daily_weather,temp_eve,numeric,YES
+daily_weather,temp_night,numeric,YES
+daily_weather,temp_min,numeric,YES
+daily_weather,temp_max,numeric,YES
+daily_weather,feels_morn,numeric,YES
+daily_weather,feels_day,numeric,YES
+daily_weather,feels_eve,numeric,YES
+daily_weather,feels_night,numeric,YES
+daily_weather,pressure,integer,YES
+daily_weather,humidity,integer,YES
+daily_weather,dew_point,numeric,YES
+daily_weather,wind_speed,numeric,YES
+daily_weather,wind_deg,integer,YES
+daily_weather,wind_gust,numeric,YES
+daily_weather,clouds,integer,YES
+daily_weather,pop,numeric,YES
+daily_weather,rain,numeric,YES
+daily_weather,snow,numeric,YES
+daily_weather,uvi,numeric,YES
+daily_weather,condition_id,integer,YES
+decrypted_secrets,id,uuid,YES
+decrypted_secrets,name,text,YES
+decrypted_secrets,description,text,YES
+decrypted_secrets,secret,text,YES
+decrypted_secrets,decrypted_secret,text,YES
+decrypted_secrets,key_id,uuid,YES
+decrypted_secrets,nonce,bytea,YES
+decrypted_secrets,created_at,timestamp with time zone,YES
+decrypted_secrets,updated_at,timestamp with time zone,YES
+flow_state,id,uuid,NO
+flow_state,user_id,uuid,YES
+flow_state,auth_code,text,NO
+flow_state,code_challenge_method,USER-DEFINED,NO
+flow_state,code_challenge,text,NO
+flow_state,provider_type,text,NO
+flow_state,provider_access_token,text,YES
+flow_state,provider_refresh_token,text,YES
+flow_state,created_at,timestamp with time zone,YES
+flow_state,updated_at,timestamp with time zone,YES
+flow_state,authentication_method,text,NO
+flow_state,auth_code_issued_at,timestamp with time zone,YES
+hourly_weather,hourly_id,integer,NO
+hourly_weather,request_id,integer,NO
+hourly_weather,dt,bigint,NO
+hourly_weather,temp,numeric,YES
+hourly_weather,feels_like,numeric,YES
+hourly_weather,pressure,integer,YES
+hourly_weather,humidity,integer,YES
+hourly_weather,dew_point,numeric,YES
+hourly_weather,uvi,numeric,YES
+hourly_weather,clouds,integer,YES
+hourly_weather,visibility,integer,YES
+hourly_weather,wind_speed,numeric,YES
+hourly_weather,wind_deg,integer,YES
+hourly_weather,wind_gust,numeric,YES
+hourly_weather,pop,numeric,YES
+hourly_weather,rain_1h,numeric,YES
+hourly_weather,snow_1h,numeric,YES
+hourly_weather,condition_id,integer,YES
+identities,provider_id,text,NO
+identities,user_id,uuid,NO
+identities,identity_data,jsonb,NO
+identities,provider,text,NO
+identities,last_sign_in_at,timestamp with time zone,YES
+identities,created_at,timestamp with time zone,YES
+identities,updated_at,timestamp with time zone,YES
+identities,email,text,YES
+identities,id,uuid,NO
+instances,id,uuid,NO
+instances,uuid,uuid,YES
+instances,raw_base_config,text,YES
+instances,created_at,timestamp with time zone,YES
+instances,updated_at,timestamp with time zone,YES
+location,location_id,integer,NO
+location,latitude,numeric,NO
+location,longitude,numeric,NO
+location,timezone,character varying,YES
+location,timezone_offset,integer,YES
+messages,topic,text,NO
+messages,extension,text,NO
+messages,payload,jsonb,YES
+messages,event,text,YES
+messages,private,boolean,YES
+messages,updated_at,timestamp without time zone,NO
+messages,inserted_at,timestamp without time zone,NO
+messages,id,uuid,NO
+mfa_amr_claims,session_id,uuid,NO
+mfa_amr_claims,created_at,timestamp with time zone,NO
+mfa_amr_claims,updated_at,timestamp with time zone,NO
+mfa_amr_claims,authentication_method,text,NO
+mfa_amr_claims,id,uuid,NO
+mfa_challenges,id,uuid,NO
+mfa_challenges,factor_id,uuid,NO
+mfa_challenges,created_at,timestamp with time zone,NO
+mfa_challenges,verified_at,timestamp with time zone,YES
+mfa_challenges,ip_address,inet,NO
+mfa_challenges,otp_code,text,YES
+mfa_challenges,web_authn_session_data,jsonb,YES
+mfa_factors,id,uuid,NO
+mfa_factors,user_id,uuid,NO
+mfa_factors,friendly_name,text,YES
+mfa_factors,factor_type,USER-DEFINED,NO
+mfa_factors,status,USER-DEFINED,NO
+mfa_factors,created_at,timestamp with time zone,NO
+mfa_factors,updated_at,timestamp with time zone,NO
+mfa_factors,secret,text,YES
+mfa_factors,phone,text,YES
+mfa_factors,last_challenged_at,timestamp with time zone,YES
+mfa_factors,web_authn_credential,jsonb,YES
+mfa_factors,web_authn_aaguid,uuid,YES
+mfa_factors,last_webauthn_challenge_data,jsonb,YES
+migrations,id,integer,NO
+migrations,name,character varying,NO
+migrations,hash,character varying,NO
+migrations,executed_at,timestamp without time zone,YES
+minutely_weather,minutely_id,integer,NO
+minutely_weather,request_id,integer,NO
+minutely_weather,dt,bigint,NO
+minutely_weather,precipitation,numeric,YES
+oauth_authorizations,id,uuid,NO
+oauth_authorizations,authorization_id,text,NO
+oauth_authorizations,client_id,uuid,NO
+oauth_authorizations,user_id,uuid,YES
+oauth_authorizations,redirect_uri,text,NO
+oauth_authorizations,scope,text,NO
+oauth_authorizations,state,text,YES
+oauth_authorizations,resource,text,YES
+oauth_authorizations,code_challenge,text,YES
+oauth_authorizations,code_challenge_method,USER-DEFINED,YES
+oauth_authorizations,response_type,USER-DEFINED,NO
+oauth_authorizations,status,USER-DEFINED,NO
+oauth_authorizations,authorization_code,text,YES
+oauth_authorizations,created_at,timestamp with time zone,NO
+oauth_authorizations,expires_at,timestamp with time zone,NO
+oauth_authorizations,approved_at,timestamp with time zone,YES
+oauth_authorizations,nonce,text,YES
+oauth_client_states,id,uuid,NO
+oauth_client_states,provider_type,text,NO
+oauth_client_states,code_verifier,text,YES
+oauth_client_states,created_at,timestamp with time zone,NO
+oauth_clients,id,uuid,NO
+oauth_clients,client_secret_hash,text,YES
+oauth_clients,registration_type,USER-DEFINED,NO
+oauth_clients,redirect_uris,text,NO
+oauth_clients,grant_types,text,NO
+oauth_clients,client_name,text,YES
+oauth_clients,client_uri,text,YES
+oauth_clients,logo_uri,text,YES
+oauth_clients,created_at,timestamp with time zone,NO
+oauth_clients,updated_at,timestamp with time zone,NO
+oauth_clients,deleted_at,timestamp with time zone,YES
+oauth_clients,client_type,USER-DEFINED,NO
+oauth_consents,id,uuid,NO
+oauth_consents,user_id,uuid,NO
+oauth_consents,client_id,uuid,NO
+oauth_consents,scopes,text,NO
+oauth_consents,granted_at,timestamp with time zone,NO
+oauth_consents,revoked_at,timestamp with time zone,YES
+objects,id,uuid,NO
+objects,bucket_id,text,YES
+objects,name,text,YES
+objects,owner,uuid,YES
+objects,created_at,timestamp with time zone,YES
+objects,updated_at,timestamp with time zone,YES
+objects,last_accessed_at,timestamp with time zone,YES
+objects,metadata,jsonb,YES
+objects,path_tokens,ARRAY,YES
+objects,version,text,YES
+objects,owner_id,text,YES
+objects,user_metadata,jsonb,YES
+objects,level,integer,YES
+one_time_tokens,id,uuid,NO
+one_time_tokens,user_id,uuid,NO
+one_time_tokens,token_type,USER-DEFINED,NO
+one_time_tokens,token_hash,text,NO
+one_time_tokens,relates_to,text,NO
+one_time_tokens,created_at,timestamp without time zone,NO
+one_time_tokens,updated_at,timestamp without time zone,NO
+pg_stat_statements,userid,oid,YES
+pg_stat_statements,dbid,oid,YES
+pg_stat_statements,toplevel,boolean,YES
+pg_stat_statements,queryid,bigint,YES
+pg_stat_statements,query,text,YES
+pg_stat_statements,plans,bigint,YES
+pg_stat_statements,total_plan_time,double precision,YES
+pg_stat_statements,min_plan_time,double precision,YES
+pg_stat_statements,max_plan_time,double precision,YES
+pg_stat_statements,mean_plan_time,double precision,YES
+pg_stat_statements,stddev_plan_time,double precision,YES
+pg_stat_statements,calls,bigint,YES
+pg_stat_statements,total_exec_time,double precision,YES
+pg_stat_statements,min_exec_time,double precision,YES
+pg_stat_statements,max_exec_time,double precision,YES
+pg_stat_statements,mean_exec_time,double precision,YES
+pg_stat_statements,stddev_exec_time,double precision,YES
+pg_stat_statements,rows,bigint,YES
+pg_stat_statements,shared_blks_hit,bigint,YES
+pg_stat_statements,shared_blks_read,bigint,YES
+pg_stat_statements,shared_blks_dirtied,bigint,YES
+pg_stat_statements,shared_blks_written,bigint,YES
+pg_stat_statements,local_blks_hit,bigint,YES
+pg_stat_statements,local_blks_read,bigint,YES
+pg_stat_statements,local_blks_dirtied,bigint,YES
+pg_stat_statements,local_blks_written,bigint,YES
+pg_stat_statements,temp_blks_read,bigint,YES
+pg_stat_statements,temp_blks_written,bigint,YES
+pg_stat_statements,shared_blk_read_time,double precision,YES
+pg_stat_statements,shared_blk_write_time,double precision,YES
+pg_stat_statements,local_blk_read_time,double precision,YES
+pg_stat_statements,local_blk_write_time,double precision,YES
+pg_stat_statements,temp_blk_read_time,double precision,YES
+pg_stat_statements,temp_blk_write_time,double precision,YES
+pg_stat_statements,wal_records,bigint,YES
+pg_stat_statements,wal_fpi,bigint,YES
+pg_stat_statements,wal_bytes,numeric,YES
+pg_stat_statements,jit_functions,bigint,YES
+pg_stat_statements,jit_generation_time,double precision,YES
+pg_stat_statements,jit_inlining_count,bigint,YES
+pg_stat_statements,jit_inlining_time,double precision,YES
+pg_stat_statements,jit_optimization_count,bigint,YES
+pg_stat_statements,jit_optimization_time,double precision,YES
+pg_stat_statements,jit_emission_count,bigint,YES
+pg_stat_statements,jit_emission_time,double precision,YES
+pg_stat_statements,jit_deform_count,bigint,YES
+pg_stat_statements,jit_deform_time,double precision,YES
+pg_stat_statements,stats_since,timestamp with time zone,YES
+pg_stat_statements,minmax_stats_since,timestamp with time zone,YES
+pg_stat_statements_info,dealloc,bigint,YES
+pg_stat_statements_info,stats_reset,timestamp with time zone,YES
+prefixes,bucket_id,text,NO
+prefixes,name,text,NO
+prefixes,level,integer,NO
+prefixes,created_at,timestamp with time zone,YES
+prefixes,updated_at,timestamp with time zone,YES
+refresh_tokens,instance_id,uuid,YES
+refresh_tokens,id,bigint,NO
+refresh_tokens,token,character varying,YES
+refresh_tokens,user_id,character varying,YES
+refresh_tokens,revoked,boolean,YES
+refresh_tokens,created_at,timestamp with time zone,YES
+refresh_tokens,updated_at,timestamp with time zone,YES
+refresh_tokens,parent,character varying,YES
+refresh_tokens,session_id,uuid,YES
+s3_multipart_uploads,id,text,NO
+s3_multipart_uploads,in_progress_size,bigint,NO
+s3_multipart_uploads,upload_signature,text,NO
+s3_multipart_uploads,bucket_id,text,NO
+s3_multipart_uploads,key,text,NO
+s3_multipart_uploads,version,text,NO
+s3_multipart_uploads,owner_id,text,YES
+s3_multipart_uploads,created_at,timestamp with time zone,NO
+s3_multipart_uploads,user_metadata,jsonb,YES
+s3_multipart_uploads_parts,id,uuid,NO
+s3_multipart_uploads_parts,upload_id,text,NO
+s3_multipart_uploads_parts,size,bigint,NO
+s3_multipart_uploads_parts,part_number,integer,NO
+s3_multipart_uploads_parts,bucket_id,text,NO
+s3_multipart_uploads_parts,key,text,NO
+s3_multipart_uploads_parts,etag,text,NO
+s3_multipart_uploads_parts,owner_id,text,YES
+s3_multipart_uploads_parts,version,text,NO
+s3_multipart_uploads_parts,created_at,timestamp with time zone,NO
+saml_providers,id,uuid,NO
+saml_providers,sso_provider_id,uuid,NO
+saml_providers,entity_id,text,NO
+saml_providers,metadata_xml,text,NO
+saml_providers,metadata_url,text,YES
+saml_providers,attribute_mapping,jsonb,YES
+saml_providers,created_at,timestamp with time zone,YES
+saml_providers,updated_at,timestamp with time zone,YES
+saml_providers,name_id_format,text,YES
+saml_relay_states,id,uuid,NO
+saml_relay_states,sso_provider_id,uuid,NO
+saml_relay_states,request_id,text,NO
+saml_relay_states,for_email,text,YES
+saml_relay_states,redirect_to,text,YES
+saml_relay_states,created_at,timestamp with time zone,YES
+saml_relay_states,updated_at,timestamp with time zone,YES
+saml_relay_states,flow_state_id,uuid,YES
+schema_migrations,version,character varying,NO
+schema_migrations,version,bigint,NO
+schema_migrations,inserted_at,timestamp without time zone,YES
+secrets,id,uuid,NO
+secrets,name,text,YES
+secrets,description,text,NO
+secrets,secret,text,NO
+secrets,key_id,uuid,YES
+secrets,nonce,bytea,YES
+secrets,created_at,timestamp with time zone,NO
+secrets,updated_at,timestamp with time zone,NO
+sessions,id,uuid,NO
+sessions,user_id,uuid,NO
+sessions,created_at,timestamp with time zone,YES
+sessions,updated_at,timestamp with time zone,YES
+sessions,factor_id,uuid,YES
+sessions,aal,USER-DEFINED,YES
+sessions,not_after,timestamp with time zone,YES
+sessions,refreshed_at,timestamp without time zone,YES
+sessions,user_agent,text,YES
+sessions,ip,inet,YES
+sessions,tag,text,YES
+sessions,oauth_client_id,uuid,YES
+sessions,refresh_token_hmac_key,text,YES
+sessions,refresh_token_counter,bigint,YES
+sessions,scopes,text,YES
+sso_domains,id,uuid,NO
+sso_domains,sso_provider_id,uuid,NO
+sso_domains,domain,text,NO
+sso_domains,created_at,timestamp with time zone,YES
+sso_domains,updated_at,timestamp with time zone,YES
+sso_providers,id,uuid,NO
+sso_providers,resource_id,text,YES
+sso_providers,created_at,timestamp with time zone,YES
+sso_providers,updated_at,timestamp with time zone,YES
+sso_providers,disabled,boolean,YES
+subscription,id,bigint,NO
+subscription,subscription_id,uuid,NO
+subscription,entity,regclass,NO
+subscription,filters,ARRAY,NO
+subscription,claims,jsonb,NO
+subscription,claims_role,regrole,NO
+subscription,created_at,timestamp without time zone,NO
+system_logs,id,uuid,NO
+system_logs,water_level_cm,double precision,NO
+system_logs,location,text,NO
+system_logs,created_at,timestamp without time zone,YES
+users,instance_id,uuid,YES
+users,id,uuid,NO
+users,aud,character varying,YES
+users,role,character varying,YES
+users,email,character varying,YES
+users,encrypted_password,character varying,YES
+users,email_confirmed_at,timestamp with time zone,YES
+users,invited_at,timestamp with time zone,YES
+users,confirmation_token,character varying,YES
+users,confirmation_sent_at,timestamp with time zone,YES
+users,recovery_token,character varying,YES
+users,recovery_sent_at,timestamp with time zone,YES
+users,email_change_token_new,character varying,YES
+users,email_change,character varying,YES
+users,email_change_sent_at,timestamp with time zone,YES
+users,last_sign_in_at,timestamp with time zone,YES
+users,raw_app_meta_data,jsonb,YES
+users,raw_user_meta_data,jsonb,YES
+users,is_super_admin,boolean,YES
+users,created_at,timestamp with time zone,YES
+users,updated_at,timestamp with time zone,YES
+users,phone,text,YES
+users,phone_confirmed_at,timestamp with time zone,YES
+users,phone_change,text,YES
+users,phone_change_token,character varying,YES
+users,phone_change_sent_at,timestamp with time zone,YES
+users,confirmed_at,timestamp with time zone,YES
+users,email_change_token_current,character varying,YES
+users,email_change_confirm_status,smallint,YES
+users,banned_until,timestamp with time zone,YES
+users,reauthentication_token,character varying,YES
+users,reauthentication_sent_at,timestamp with time zone,YES
+users,is_sso_user,boolean,NO
+users,deleted_at,timestamp with time zone,YES
+users,is_anonymous,boolean,NO
+vector_indexes,id,text,NO
+vector_indexes,name,text,NO
+vector_indexes,bucket_id,text,NO
+vector_indexes,data_type,text,NO
+vector_indexes,dimension,integer,NO
+vector_indexes,distance_metric,text,NO
+vector_indexes,metadata_configuration,jsonb,YES
+vector_indexes,created_at,timestamp with time zone,NO
+vector_indexes,updated_at,timestamp with time zone,NO
+weather_alerts,alert_id,integer,NO
+weather_alerts,request_id,integer,NO
+weather_alerts,sender_name,character varying,YES
+weather_alerts,event,character varying,YES
+weather_alerts,start,bigint,YES
+weather_alerts,end,bigint,YES
+weather_alerts,description,text,YES
+weather_condition,condition_id,integer,NO
+weather_condition,api_id,integer,YES
+weather_condition,main,character varying,YES
+weather_condition,description,character varying,YES
+weather_condition,icon,character varying,YES
+weather_request,request_id,integer,NO
+weather_request,location_id,integer,NO
+weather_request,request_time,timestamp without time zone,YES
+weather_request,source,character varying,YES

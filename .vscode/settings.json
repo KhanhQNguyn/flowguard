@@ -1,0 +1,14 @@
+{
+    "sqltools.connections": [
+        {
+            "ssh": "Disabled",
+            "previewLimit": 50,
+            "server": "db.zojxcmetxhbcxoszebdz.supabase.co",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "name": "Flowguard",
+            "database": "postgres",
+            "username": "postgres"
+        }
+    ]
+}

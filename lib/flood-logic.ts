@@ -1,247 +1,72 @@
-export type RiskLevel = "LOW" | "MEDIUM" | "HIGH"
-export type RainIntensity = "Low" | "Medium" | "Heavy"
-export type TideLevel = "Low" | "Medium" | "High"
-
-export interface FloodInputs {
-  rainIntensity: RainIntensity
-  waterLevel: number // in cm
+export interface RiskInput {
+  rainIntensity: 'Low' | 'Medium' | 'Heavy'
+  waterLevel: number
   citizenReports: number
-  tideLevel: TideLevel
+  tideLevel: 'Low' | 'Medium' | 'High'
 }
 
-export interface PredictionPoint {
-  time: string
-  waterLevel: number
+export interface RiskOutput {
+  risk: 'LOW' | 'MEDIUM' | 'HIGH'
+  reasoning: string[]
+  confidence: number
 }
 
-export interface DistrictStatus {
-  name: string
-  risk: RiskLevel
-  waterLevel: number
-}
+export function calculateFloodRisk(input: RiskInput): RiskOutput {
+  let risk: 'LOW' | 'MEDIUM' | 'HIGH' = 'LOW'
+  const reasoning: string[] = []
 
-export interface SensorData {
-  id: number
-  name: string
-  lat: number
-  lng: number
-  status: "online" | "offline" | "warning" | "critical"
-  waterLevel: number
-  trend: "rising" | "stable" | "falling"
-  lastUpdate: string
-}
-
-export interface AlertData {
-  id: number
-  type: "system" | "sensor" | "weather" | "community"
-  severity: RiskLevel
-  title: string
-  location: string
-  message: string
-  time: string
-  isRead: boolean
-}
-
-// Core risk calculation function
-export function calculateFloodRisk(inputs: FloodInputs): RiskLevel {
-  const { rainIntensity, waterLevel, citizenReports, tideLevel } = inputs
-
-  let risk: RiskLevel = "LOW"
-
-  // PRIMARY THRESHOLDS
-  if (waterLevel > 70) {
-    risk = "HIGH"
-  } else if (waterLevel > 50) {
-    risk = "MEDIUM"
+  // Rule 1: Primary water level thresholds
+  if (input.waterLevel > 70) {
+    risk = 'HIGH'
+    reasoning.push('Water level exceeds 70cm critical threshold')
+  } else if (input.waterLevel > 30) {
+    risk = 'MEDIUM'
+    reasoning.push('Water level above 30cm warning threshold')
   }
 
-  // RAIN INTENSITY ESCALATION
-  if (rainIntensity === "Heavy") {
-    if (waterLevel > 50) risk = "HIGH"
-    else if (waterLevel > 30) risk = "MEDIUM"
+  // Rule 2: Rain intensity escalation
+  if (input.rainIntensity === 'Heavy') {
+    if (input.waterLevel > 50) {
+      risk = 'HIGH'
+      reasoning.push('Heavy rain combined with elevated water levels')
+    } else if (input.waterLevel > 30) {
+      if (risk === 'LOW') risk = 'MEDIUM'
+      reasoning.push('Heavy rain increasing flood risk')
+    }
   }
 
-  if (rainIntensity === "Medium") {
-    if (waterLevel > 60) risk = "HIGH"
-    else if (waterLevel > 40) risk = "MEDIUM"
+  // Rule 3: Citizen report validation
+  if (input.citizenReports >= 3 && input.waterLevel > 35) {
+    if (risk === 'LOW') {
+      risk = 'MEDIUM'
+      reasoning.push('Multiple citizen reports confirm rising water')
+    } else if (risk === 'MEDIUM') {
+      risk = 'HIGH'
+      reasoning.push('Citizen reports escalate existing risk')
+    }
   }
 
-  // TIDE LEVEL MODIFIER
-  if (tideLevel === "High" && waterLevel > 40) {
-    if (risk === "MEDIUM") risk = "HIGH"
-    else if (risk === "LOW") risk = "MEDIUM"
+  // Rule 4: Tide level modifier
+  if (input.tideLevel === 'High' && input.waterLevel > 40) {
+    if (risk === 'MEDIUM') {
+      risk = 'HIGH'
+      reasoning.push('High tide amplifies flood risk')
+    } else if (risk === 'LOW') {
+      risk = 'MEDIUM'
+      reasoning.push('High tide raises water levels')
+    }
   }
 
-  // CITIZEN REPORT ESCALATION
-  if (citizenReports >= 3 && waterLevel > 35) {
-    if (risk === "LOW") risk = "MEDIUM"
-    else if (risk === "MEDIUM") risk = "HIGH"
+  // Calculate confidence based on data availability
+  let confidence = 70
+  if (input.waterLevel > 0) confidence += 10
+  if (input.rainIntensity !== 'Low') confidence += 10
+  if (input.citizenReports > 0) confidence += 10
+
+  // If no reasoning was added, add a default
+  if (reasoning.length === 0) {
+    reasoning.push('All sensor readings within normal parameters')
   }
 
-  return risk
-}
-
-// Generate prediction timeline data
-export function generatePredictionData(currentWaterLevel: number, rainIntensity: RainIntensity): PredictionPoint[] {
-  const data: PredictionPoint[] = []
-  let level = currentWaterLevel
-
-  // Rate of rise based on rain
-  const riseRate = rainIntensity === "Heavy" ? 2 : rainIntensity === "Medium" ? 1 : 0.5
-
-  for (let i = 0; i <= 60; i += 10) {
-    data.push({
-      time: i === 0 ? "Now" : `+${i}m`,
-      waterLevel: Math.round(level),
-    })
-    level += riseRate * 10
-  }
-
-  return data
-}
-
-// Calculate time to risk threshold
-export function calculateTimeToRisk(currentWaterLevel: number, rainIntensity: RainIntensity, threshold = 70): number {
-  const riseRate = rainIntensity === "Heavy" ? 2 : rainIntensity === "Medium" ? 1 : 0.5
-
-  if (currentWaterLevel >= threshold) return 0
-
-  const difference = threshold - currentWaterLevel
-  return Math.ceil(difference / riseRate)
-}
-
-// Generate district statuses based on base water level
-export function generateDistrictStatuses(baseWaterLevel: number, rainIntensity: RainIntensity): DistrictStatus[] {
-  const districts = [
-    { name: "District 1", modifier: -15 },
-    { name: "District 4", modifier: 5 },
-    { name: "District 7", modifier: 20 },
-    { name: "Bình Thạnh", modifier: -10 },
-    { name: "Thủ Đức", modifier: 0 },
-  ]
-
-  return districts.map((d) => {
-    const waterLevel = Math.max(0, baseWaterLevel + d.modifier)
-    const risk = calculateFloodRisk({
-      waterLevel,
-      rainIntensity,
-      citizenReports: 0,
-      tideLevel: "Medium",
-    })
-    return { name: d.name, risk, waterLevel }
-  })
-}
-
-// Initial sensor data
-export const INITIAL_SENSORS: SensorData[] = [
-  {
-    id: 1,
-    name: "Nguyễn Hữu Cảnh",
-    lat: 10.788,
-    lng: 106.703,
-    status: "online",
-    waterLevel: 52,
-    trend: "rising",
-    lastUpdate: "2 min ago",
-  },
-  {
-    id: 2,
-    name: "Võ Văn Kiệt",
-    lat: 10.757,
-    lng: 106.682,
-    status: "online",
-    waterLevel: 38,
-    trend: "stable",
-    lastUpdate: "1 min ago",
-  },
-  {
-    id: 3,
-    name: "Huỳnh Tấn Phát",
-    lat: 10.736,
-    lng: 106.702,
-    status: "warning",
-    waterLevel: 68,
-    trend: "rising",
-    lastUpdate: "3 min ago",
-  },
-  {
-    id: 4,
-    name: "Cầu Kênh Tẻ",
-    lat: 10.745,
-    lng: 106.715,
-    status: "online",
-    waterLevel: 42,
-    trend: "stable",
-    lastUpdate: "5 min ago",
-  },
-  {
-    id: 5,
-    name: "Cầu Phú Mỹ",
-    lat: 10.732,
-    lng: 106.721,
-    status: "offline",
-    waterLevel: 0,
-    trend: "stable",
-    lastUpdate: "Offline",
-  },
-]
-
-// Generate alerts based on current conditions
-export function generateAlerts(inputs: FloodInputs, districts: DistrictStatus[]): AlertData[] {
-  const alerts: AlertData[] = []
-  const risk = calculateFloodRisk(inputs)
-
-  if (risk === "HIGH") {
-    alerts.push({
-      id: 1,
-      type: "system",
-      severity: "HIGH",
-      title: "HIGH RISK ALERT",
-      location: "District 7 – Huỳnh Tấn Phát",
-      message: "Water level exceeds 70cm. Avoid travel. Flooding likely.",
-      time: "5 minutes ago",
-      isRead: false,
-    })
-  }
-
-  if (inputs.rainIntensity === "Heavy") {
-    alerts.push({
-      id: 2,
-      type: "weather",
-      severity: "MEDIUM",
-      title: "Heavy Rain Warning",
-      location: "HCMC Metropolitan Area",
-      message: "Heavy rainfall expected to continue for the next 2 hours.",
-      time: "12 minutes ago",
-      isRead: false,
-    })
-  }
-
-  districts
-    .filter((d) => d.risk === "MEDIUM")
-    .forEach((d, i) => {
-      alerts.push({
-        id: 10 + i,
-        type: "sensor",
-        severity: "MEDIUM",
-        title: "Water Rising",
-        location: d.name,
-        message: `Water level at ${d.waterLevel}cm and rising.`,
-        time: `${15 + i * 5} minutes ago`,
-        isRead: true,
-      })
-    })
-
-  alerts.push({
-    id: 100,
-    type: "community",
-    severity: "LOW",
-    title: "All Clear",
-    location: "District 1",
-    message: "Conditions normal. No flooding reported.",
-    time: "1 hour ago",
-    isRead: true,
-  })
-
-  return alerts
+  return { risk, reasoning, confidence: Math.min(confidence, 100) }
 }

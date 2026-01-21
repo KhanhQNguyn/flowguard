@@ -1,60 +1,56 @@
-import { type NextRequest, NextResponse } from "next/server"
-
-interface RiskInput {
-  rainIntensity: "Low" | "Medium" | "Heavy"
-  waterLevel: number
-  citizenReports: number
-  tideLevel: "Low" | "Medium" | "High"
-}
+import { NextRequest, NextResponse } from 'next/server'
+import { calculateFloodRisk } from '@/lib/flood-logic'
 
 export async function POST(request: NextRequest) {
-  const body: RiskInput = await request.json()
+  try {
+    const body = await request.json()
 
-  let risk: "LOW" | "MEDIUM" | "HIGH" = "LOW"
-  const reasoning: string[] = []
+    const { rainIntensity, waterLevel, citizenReports, tideLevel } = body
 
-  // Primary threshold
-  if (body.waterLevel > 70) {
-    risk = "HIGH"
-    reasoning.push("Water level exceeds 70cm threshold")
-  } else if (body.waterLevel > 50) {
-    risk = "MEDIUM"
-    reasoning.push("Water level exceeds 50cm threshold")
-  }
-
-  // Rain escalation
-  if (body.rainIntensity === "Heavy") {
-    if (body.waterLevel > 50) {
-      risk = "HIGH"
-      reasoning.push("Heavy rain + high water → escalated to HIGH")
-    } else if (body.waterLevel > 30) {
-      if (risk === "LOW") risk = "MEDIUM"
-      reasoning.push("Heavy rain detected")
+    // Validation
+    if (!rainIntensity || waterLevel === undefined || citizenReports === undefined || !tideLevel) {
+      return NextResponse.json(
+        { error: 'Missing required parameters' },
+        { status: 400 }
+      )
     }
-  }
 
-  // Citizen reports
-  if (body.citizenReports >= 3 && body.waterLevel > 35) {
-    if (risk === "LOW") {
-      risk = "MEDIUM"
-      reasoning.push("Multiple verified reports → escalated")
-    } else if (risk === "MEDIUM") {
-      risk = "HIGH"
-      reasoning.push("Multiple reports confirm HIGH risk")
+    // Validate rainIntensity
+    if (!['Low', 'Medium', 'Heavy'].includes(rainIntensity)) {
+      return NextResponse.json(
+        { error: 'Invalid rainIntensity. Must be Low, Medium, or Heavy.' },
+        { status: 400 }
+      )
     }
-  }
 
-  // Tide modifier
-  if (body.tideLevel === "High" && body.waterLevel > 40) {
-    if (risk === "LOW") risk = "MEDIUM"
-    else if (risk === "MEDIUM") risk = "HIGH"
-    reasoning.push("High tide increases flood risk")
-  }
+    // Validate tideLevel
+    if (!['Low', 'Medium', 'High'].includes(tideLevel)) {
+      return NextResponse.json(
+        { error: 'Invalid tideLevel. Must be Low, Medium, or High.' },
+        { status: 400 }
+      )
+    }
 
+    const result = calculateFloodRisk({
+      rainIntensity,
+      waterLevel: Number(waterLevel),
+      citizenReports: Number(citizenReports),
+      tideLevel
+    })
+
+    return NextResponse.json(result)
+  } catch (error) {
+    console.error('[API] Risk calculation error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function GET() {
   return NextResponse.json({
-    risk,
-    reasoning,
-    inputs: body,
-    timestamp: new Date().toISOString(),
+    message: 'FlowGuard Risk Calculation API',
+    usage: 'POST with { rainIntensity, waterLevel, citizenReports, tideLevel }'
   })
 }

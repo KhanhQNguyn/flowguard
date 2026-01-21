@@ -1,0 +1,86 @@
+@media (min-width: 1024px) {
+  /* iPhone-like phone frame on desktop */
+  .phone-frame-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    padding: 40px 20px;
+  }
+
+  .phone-frame {
+    position: relative;
+    width: 390px;
+    height: 844px;
+    border: 12px solid #1a1a1a;
+    border-radius: 40px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  /* iPhone notch */
+  .phone-frame::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 150px;
+    height: 28px;
+    background: #1a1a1a;
+    border-radius: 0 0 25px 25px;
+    z-index: 10;
+  }
+
+  /* Viewport inside frame */
+  .phone-frame-content {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Remove default scrollbar styling for cleaner look */
+  .phone-frame-content::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .phone-frame-content::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .phone-frame-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+  }
+
+  .phone-frame-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+}
+
+@media (max-width: 1023px) {
+  .phone-frame-wrapper {
+    display: block;
+  }
+
+  .phone-frame {
+    border: none;
+    border-radius: 0;
+    width: 100%;
+    height: auto;
+    box-shadow: none;
+  }
+
+  .phone-frame::before {
+    display: none;
+  }
+
+  .phone-frame-content {
+    width: 100%;
+    height: auto;
+  }
+}

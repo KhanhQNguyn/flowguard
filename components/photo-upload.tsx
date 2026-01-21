@@ -1,77 +1,53 @@
-"use client"
+'use client'
 
-import { useState, useRef } from "react"
-import { Camera, X, ImageIcon } from "lucide-react"
+import React from "react"
+
+import { Camera, X } from 'lucide-react'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 interface PhotoUploadProps {
-  onUpload: (files: File[]) => void
+  photo: string | null
+  onPhotoChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onClear: () => void
 }
 
-export function PhotoUpload({ onUpload }: PhotoUploadProps) {
-  const [previews, setPreviews] = useState<string[]>([])
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  const handleFiles = (files: FileList | null) => {
-    if (!files) return
-
-    const newFiles = Array.from(files).slice(0, 3 - previews.length)
-    const newPreviews = newFiles.map((file) => URL.createObjectURL(file))
-
-    setPreviews((prev) => [...prev, ...newPreviews].slice(0, 3))
-    onUpload(newFiles)
-  }
-
-  const removePreview = (index: number) => {
-    setPreviews((prev) => prev.filter((_, i) => i !== index))
-  }
-
+export function PhotoUpload({ photo, onPhotoChange, onClear }: PhotoUploadProps) {
   return (
-    <div className="space-y-3">
-      <label className="text-sm font-medium">Upload Photo/Video</label>
-
-      {previews.length === 0 ? (
-        <button
-          onClick={() => inputRef.current?.click()}
-          className="w-full h-40 border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center gap-3 hover:bg-muted/50 transition-colors"
-        >
-          <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center">
-            <Camera className="w-6 h-6 text-muted-foreground" />
+    <Card className="p-6">
+      <h3 className="font-semibold mb-3">Upload Photo</h3>
+      {!photo ? (
+        <label className="block cursor-pointer">
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={onPhotoChange}
+            className="hidden"
+          />
+          <div className="border-2 border-dashed border-neutral-300 rounded-lg p-8 text-center hover:border-[#289359] transition-colors">
+            <Camera className="w-8 h-8 text-neutral-400 mx-auto mb-2" />
+            <p className="text-sm font-medium text-neutral-700">Take a photo of the flooding</p>
+            <p className="text-xs text-neutral-500 mt-1">or tap to upload from gallery</p>
           </div>
-          <p className="text-sm text-muted-foreground">Tap to upload photo</p>
-          <p className="text-xs text-muted-foreground">Max 3 images</p>
-        </button>
+        </label>
       ) : (
-        <div className="grid grid-cols-3 gap-2">
-          {previews.map((preview, i) => (
-            <div key={i} className="relative aspect-square rounded-lg overflow-hidden animate-slide-up">
-              <img src={preview || "/placeholder.svg"} alt="" className="w-full h-full object-cover" />
-              <button
-                onClick={() => removePreview(i)}
-                className="absolute top-1 right-1 w-6 h-6 bg-black/50 rounded-full flex items-center justify-center"
-              >
-                <X className="w-4 h-4 text-white" />
-              </button>
-            </div>
-          ))}
-          {previews.length < 3 && (
-            <button
-              onClick={() => inputRef.current?.click()}
-              className="aspect-square border-2 border-dashed border-border rounded-lg flex items-center justify-center hover:bg-muted/50 transition-colors"
-            >
-              <ImageIcon className="w-6 h-6 text-muted-foreground" />
-            </button>
-          )}
+        <div className="relative">
+          <img
+            src={photo || "/placeholder.svg"}
+            alt="Flood report"
+            className="w-full rounded-lg object-cover max-h-64"
+          />
+          <Button
+            onClick={onClear}
+            variant="ghost"
+            size="sm"
+            className="absolute top-2 right-2 bg-white/90 hover:bg-white"
+          >
+            <X className="w-4 h-4" />
+          </Button>
         </div>
       )}
-
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*,video/*"
-        multiple
-        onChange={(e) => handleFiles(e.target.files)}
-        className="hidden"
-      />
-    </div>
+    </Card>
   )
 }
