@@ -1,7 +1,6 @@
 # FlowGuard - Intelligent Flood Warning & Safety Platform
 
 A mobile-first citizen safety application that provides real-time flood risk detection, intelligent routing, and crowdsourced reporting for Ho Chi Minh City. Built with Next.js, React, and Tailwind CSS.
-
 ## Features
 
 **Citizen Features:**
@@ -228,8 +227,8 @@ For issues or questions:
 
 ## License
 
-Private - FlowGuard Development Team
+Private - FlowGuard Development Team - Aquaholics In Paris
 
 ## Team
 
-Built by v0 with Vietnamese-focused design for Ho Chi Minh City flood safety.
+Built by Next.js with Vietnamese-focused design for Ho Chi Minh City flood safety.
