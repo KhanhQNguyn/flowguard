@@ -229,20 +229,20 @@ def get_latest_water_levels():
     
     try:
         # Order by created_at desc if available to get freshest readings first
-    print('[Backend] Querying Supabase system_logs for latest water levels...')
-    response = supabase_client.table('system_logs').select('*').order('created_at', desc=True).limit(100).execute()
-    print('[Backend] Supabase system_logs rows:', len(response.data) if hasattr(response, 'data') and response.data else 0)
+        print('[Backend] Querying Supabase system_logs for latest water levels...')
+        response = supabase_client.table('system_logs').select('*').order('created_at', desc=True).limit(100).execute()
+        print('[Backend] Supabase system_logs rows:', len(response.data) if hasattr(response, 'data') and response.data else 0)
         
         data = response.data if hasattr(response, 'data') else []
         
-    result = {
+        result = {
             'success': True,
             'count': len(data),
             'timestamp': datetime.now().isoformat(),
             'readings': data
-    }
-    print('[Backend] Returning latest water levels payload:', { 'count': result['count'] })
-    return jsonify(result)
+        }
+        print('[Backend] Returning latest water levels payload:', { 'count': result['count'] })
+        return jsonify(result)
     except Exception as e:
         print(f"[Backend] ERROR: {e}")
         return jsonify({
@@ -264,7 +264,7 @@ def water_level_mode():
         return jsonify({'success': False, 'error': 'Supabase not configured'}), 503
 
     try:
-    if request.method == 'GET':
+        if request.method == 'GET':
             try:
                 print('[Backend] Fetching sensor_config mode (id=1)')
                 resp = supabase_client.table('sensor_config').select('mode').eq('id', 1).execute()
@@ -275,8 +275,8 @@ def water_level_mode():
             return jsonify({'success': True, 'mode': mode})
 
         # POST
-    data = request.get_json(silent=True) or {}
-    print('[Backend] Mode POST body:', data)
+        data = request.get_json(silent=True) or {}
+        print('[Backend] Mode POST body:', data)
         mode = str(data.get('mode', '')).upper()
         valid: tuple[Literal['SAFE','WARNING','CRITICAL'], ...] = ('SAFE', 'WARNING', 'CRITICAL')
         if mode not in valid:
